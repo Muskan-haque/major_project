@@ -9,7 +9,7 @@ const methodOverride = require("method-override");
 const ejsMate = require("ejs-mate");
 const ExpressError = require("./utils/ExpressError.js");
 const session = require("express-session");
-const MongoStore = require("connect-mongo").default;  // ✅ correct
+const MongoStore = require("connect-mongo").default;  //  correct
 const flash = require("connect-flash");
 const passport = require("passport");
 const LocalStrategy = require("passport-local");
@@ -33,28 +33,27 @@ const userRouter = require("./routes/user.js");
 // DB URL
 const dburl = process.env.ATLASDB_URL;
 
-// ======================
-// MAIN FUNCTION (IMPORTANT)
-// ======================
+
 async function main() {
-  // 1️⃣ Connect DB
+  // 1️Connect DB
   await mongoose.connect(dburl);
   console.log("MongoDB connection successful");
 
-  // 2️⃣ Create Mongo Session Store AFTER DB connect
-  const store = MongoStore.create({
-    client: mongoose.connection.getClient(),   // ✅ BEST WAY
-    crypto: {
-      secret: process.env.SECRET,
-    },
-    touchAfter: 24 * 3600,
-  });
+  // 2️ Create Mongo Session Store AFTER DB connect
+console.log("DB connected");
 
-  store.on("error", (err) => {
-    console.log("ERROR in mongo session store", err);
-  });
+console.log("Creating session store...");
+const store = MongoStore.create({
+  mongoUrl: dburl,
+  crypto: {
+    secret: process.env.SECRET,
+  },
+  touchAfter: 24 * 3600,
+});
 
-  // 3️⃣ Session Options
+console.log("Store created");
+
+  // 3️ Session Options
   const sessionOptions = {
     store,
     secret: process.env.SECRET,
@@ -67,11 +66,11 @@ async function main() {
     },
   };
 
-  // 4️⃣ Session & Flash
+  // 4️Session & Flash
   app.use(session(sessionOptions));
   app.use(flash());
 
-  // 5️⃣ Passport (AFTER session)
+  // 5️Passport (AFTER session)
   app.use(passport.initialize());
   app.use(passport.session());
 
@@ -79,7 +78,7 @@ async function main() {
   passport.serializeUser(user.serializeUser());
   passport.deserializeUser(user.deserializeUser());
 
-  // 6️⃣ Flash + current user middleware
+  // 6️Flash + current user middleware
   app.use((req, res, next) => {
     res.locals.success = req.flash("success");
     res.locals.error = req.flash("error");
@@ -87,23 +86,23 @@ async function main() {
     next();
   });
 
-  // 7️⃣ Routes
+  // 7️Routes
   app.use("/listings", listingRouter);
   app.use("/listings/:id/reviews", reviewRouter);
   app.use("/", userRouter);
 
-  // 8️⃣ 404 Handler
+  // 8️404 Handler
   app.use((req, res, next) => {
     next(new ExpressError(404, "Page not found"));
   });
 
-  // 9️⃣ Error Handler
+  // 9️Error Handler
   app.use((err, req, res, next) => {
     let { statusCode = 500 } = err;
     res.status(statusCode).render("error.ejs", { err });
   });
 
-  // 🔟 Start Server (LAST)
+  // Start Server (LAST)
   app.listen(8080, () => {
     console.log("app is listening on port 8080");
   });
